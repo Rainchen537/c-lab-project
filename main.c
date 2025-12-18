@@ -718,7 +718,7 @@ void manage_friends_menu(const char *user) {
         printf("4. Show current friends\n");
         printf("5. Back\n");
         printf("========================================================\n");
-        printf("选择 (1-5): ");
+        printf("Choose an option (1-5): ");
         if (scanf("%d", &choice) != 1) {
             clear_stdin();
             printf("输入无效。\n");
@@ -745,7 +745,7 @@ void manage_messages_menu(const char *user) {
         printf("3. Delete messages\n");
         printf("4. Back\n");
         printf("=========================================================\n");
-        printf("选择 (1-4): ");
+        printf("Choose an option (1-4): ");
         if (scanf("%d", &choice) != 1) {
             clear_stdin();
             printf("输入无效。\n");
@@ -770,7 +770,7 @@ void main_service_menu(const char *user) {
         printf("2. Manage messages\n");
         printf("3. Back\n");
         printf("======================================================\n");
-        printf("选择 (1-3): ");
+        printf("Choose an option (1-3): ");
         if (scanf("%d", &choice) != 1) {
             clear_stdin();
             printf("输入无效。\n");
