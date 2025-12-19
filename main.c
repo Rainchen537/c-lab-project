@@ -43,7 +43,7 @@ typedef struct {
     char content[MAX_MESSAGE];
 } Message;
 
-// ---------- 基础工具 ----------
+// ---------- 基础工具 ----------1111
 
 // 去除行末换行符
 void trim_newline(char *s) {
