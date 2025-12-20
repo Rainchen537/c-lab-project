@@ -5,13 +5,13 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-// 平台特定的头文件和函数
+// Platform-specific headers and functions
 #ifdef _WIN32
     #include <windows.h>
     #include <direct.h>
     #define MKDIR(dir) _mkdir(dir)
     #define PATH_SEP "\\"
-    // Windows控制台UTF-8支持
+    // Enable UTF-8 support on Windows console
     void enable_utf8_windows(void) {
         SetConsoleOutputCP(65001); // UTF-8 code page
     }
@@ -20,33 +20,33 @@
     #include <sys/stat.h>
     #define MKDIR(dir) mkdir(dir, 0755)
     #define PATH_SEP "/"
-    #define enable_utf8_windows() // 在Unix/Linux上不需要
+    #define enable_utf8_windows() // Not needed on Unix/Linux
 #endif
 
-// 文件与路径常量 - 使用平台特定的分隔符
+// File and path constants - using platform-specific separator
 #define DATA_DIR "data"
 #define FRIEND_DIR "data" PATH_SEP "friends"
 #define WAIT_DIR "data" PATH_SEP "waiting"
 #define MSG_DIR "data" PATH_SEP "messages"
 #define USER_DB "data" PATH_SEP "users.txt"
 
-// 字符长度限制
+// Character length limits
 #define MAX_NAME 32
 #define MAX_PWD 32
 #define MAX_LINE 512
 #define MAX_MESSAGE 512
 
 typedef struct {
-    char status[8];   // UNREAD 或 READ
+    char status[8];   // UNREAD or READ
     char date[11];    // YYYY-MM-DD
     char time_str[9]; // HH:MM:SS
     char sender[MAX_NAME];
     char content[MAX_MESSAGE];
 } Message;
 
-// ---------- 基础工具 ----------
+// ---------- Basic utilities ----------
 
-// 去除行末换行符
+// Remove trailing newline characters
 void trim_newline(char *s) {
     size_t len = strlen(s);
     while (len > 0 && (s[len - 1] == '\n' || s[len - 1] == '\r')) {
@@ -55,18 +55,18 @@ void trim_newline(char *s) {
     }
 }
 
-// 简单字符串相等判断
+// Simple string equality check
 int str_equal(const char *a, const char *b) {
     return strcmp(a, b) == 0;
 }
 
-// 清空输入缓冲区 - 跨平台版本
+// Clear input buffer - cross-platform version
 void clear_stdin(void) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {}
 }
 
-// 递归创建目录 - 跨平台版本
+// Recursively create directories - cross-platform version
 int create_directory_recursive(const char *path) {
     char temp[MAX_LINE];
     char *p = NULL;
@@ -75,28 +75,28 @@ int create_directory_recursive(const char *path) {
     snprintf(temp, sizeof(temp), "%s", path);
     len = strlen(temp);
     
-    // 移除末尾的斜杠（如果有）
+    // Remove trailing slash (if any)
     if (len > 0 && (temp[len - 1] == '/' || temp[len - 1] == '\\')) {
         temp[len - 1] = '\0';
         len--;
     }
     
-    // 逐级创建目录
+    // Create directories step by step
     for (p = temp + 1; *p; p++) {
         if (*p == '/' || *p == '\\') {
             char old_char = *p;
             *p = '\0';
             
-            // 尝试创建目录
+            // Try to create directory
             MKDIR(temp);
             
             *p = old_char;
         }
     }
     
-    // 创建最终目录
+    // Create final directory
     if (MKDIR(temp) != 0) {
-        // 目录可能已经存在，这不是一个错误
+        // Directory may already exist, not an error
         #ifdef _WIN32
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
                 return -1;
@@ -107,7 +107,7 @@ int create_directory_recursive(const char *path) {
     return 0;
 }
 
-// 确保目录存在
+// Ensure directory exists
 void ensure_dir(const char *path) {
     create_directory_recursive(path);
 }
@@ -119,7 +119,7 @@ void ensure_base_dirs(void) {
     ensure_dir(MSG_DIR);
 }
 
-// 读取一行输入（包含空格）
+// Read a line of input (including spaces)
 void prompt_line(const char *tip, char *buf, size_t len) {
     printf("%s", tip);
     if (fgets(buf, (int)len, stdin) == NULL) {
@@ -129,9 +129,9 @@ void prompt_line(const char *tip, char *buf, size_t len) {
     trim_newline(buf);
 }
 
-// ---------- 用户管理 ----------
+// ---------- User management ----------
 
-// 检查账号是否存在
+// Check if user account exists
 int user_exists(const char *name) {
     FILE *fp = fopen(USER_DB, "r");
     if (!fp) return 0;
@@ -150,11 +150,11 @@ int user_exists(const char *name) {
     return 0;
 }
 
-// 新增账号
+// Add new account
 int add_user(const char *name, const char *pwd) {
     FILE *fp = fopen(USER_DB, "a");
     if (!fp) {
-        // 保留诊断信息，便于调试
+        // Keep diagnostic message for debugging
         printf("Cannot write to user database, check permissions.\n");
         return 0;
     }
@@ -163,7 +163,7 @@ int add_user(const char *name, const char *pwd) {
     return 1;
 }
 
-// 验证登录
+// Verify login
 int verify_user(const char *name, const char *pwd) {
     FILE *fp = fopen(USER_DB, "r");
     if (!fp) return 0;
@@ -183,7 +183,7 @@ int verify_user(const char *name, const char *pwd) {
     return 0;
 }
 
-// 注册流程
+// Registration flow
 void register_flow(void) {
     char name[MAX_NAME];
     char pwd1[MAX_PWD];
@@ -210,14 +210,14 @@ void register_flow(void) {
     }
 }
 
-// 登录流程
+// Login flow
 int login_flow(char *out_name) {
     char name[MAX_NAME];
     char pwd[MAX_PWD];
     prompt_line("Please input your account name: ", name, sizeof(name));
     prompt_line("and password: ", pwd, sizeof(pwd));
     
-    // 检查是否有任何用户存在
+    // Check whether any user exists
     FILE *fp = fopen(USER_DB, "r");
     if (!fp) {
         printf("No user in this system, please register one.\n");
@@ -240,9 +240,9 @@ int login_flow(char *out_name) {
     }
 }
 
-// ---------- 列表文件工具（好友/待确认） ----------
+// ---------- List file utilities (friends/waiting) ----------
 
-// 读取字符串列表文件
+// Load string list file
 int load_list(const char *path, char arr[][MAX_NAME], int max_count) {
     FILE *fp = fopen(path, "r");
     if (!fp) return 0;
@@ -259,7 +259,7 @@ int load_list(const char *path, char arr[][MAX_NAME], int max_count) {
     return count;
 }
 
-// 保存字符串列表文件
+// Save string list file
 void save_list(const char *path, char arr[][MAX_NAME], int count) {
     FILE *fp = fopen(path, "w");
     if (!fp) {
@@ -272,7 +272,7 @@ void save_list(const char *path, char arr[][MAX_NAME], int count) {
     fclose(fp);
 }
 
-// 列表是否包含目标
+// Does list contain target
 int list_contains(char arr[][MAX_NAME], int count, const char *target) {
     for (int i = 0; i < count; i++) {
         if (str_equal(arr[i], target)) return 1;
@@ -280,7 +280,7 @@ int list_contains(char arr[][MAX_NAME], int count, const char *target) {
     return 0;
 }
 
-// 从列表移除元素
+// Remove element from list
 int list_remove(char arr[][MAX_NAME], int count, const char *target) {
     int new_count = 0;
     for (int i = 0; i < count; i++) {
@@ -291,14 +291,14 @@ int list_remove(char arr[][MAX_NAME], int count, const char *target) {
     return new_count;
 }
 
-// 构建路径 - 使用平台特定的分隔符
+// Build path - using platform-specific separator
 void build_path(char *out, size_t len, const char *dir, const char *name, const char *suffix) {
     snprintf(out, len, "%s" PATH_SEP "%s%s", dir, name, suffix);
 }
 
-// ---------- 消息读写 ----------
+// ---------- Message read/write ----------
 
-// 读取所有消息到动态数组
+// Load all messages into dynamic array
 int load_messages(const char *user, Message **out_msgs, int *out_count) {
     char path[MAX_LINE];
     build_path(path, sizeof(path), MSG_DIR, user, ".txt");
@@ -320,7 +320,7 @@ int load_messages(const char *user, Message **out_msgs, int *out_count) {
         trim_newline(line);
         if (strlen(line) == 0) continue;
 
-        // 手动解析：以 '|' 为分隔，前四个 '|' 拆出前四字段，剩余作为 content（允许 content 含 '|'）
+        // Manual parse: split by '|' - take first four fields, rest as content (allow '|' in content)
         char *p = line;
         char *fields[5] = {0};
         int fi = 0;
@@ -333,11 +333,11 @@ int load_messages(const char *user, Message **out_msgs, int *out_count) {
             }
             p++;
         }
-        // 剩下的作为第5字段（content）
+        // Remaining is the 5th field (content)
         fields[fi++] = start;
 
         if (fi < 5) {
-            // 格式不符合，跳过
+            // Format invalid, skip
             continue;
         }
         Message msg;
@@ -370,7 +370,7 @@ int load_messages(const char *user, Message **out_msgs, int *out_count) {
     return 1;
 }
 
-// 保存消息数组到文件
+// Save message array to file
 int save_messages(const char *user, Message *msgs, int count) {
     char path[MAX_LINE];
     build_path(path, sizeof(path), MSG_DIR, user, ".txt");
@@ -387,7 +387,7 @@ int save_messages(const char *user, Message *msgs, int count) {
     return 1;
 }
 
-// 追加消息到收件人文件
+// Append message to receiver's file
 int append_message(const char *receiver, const char *sender, const char *content) {
     char path[MAX_LINE];
     build_path(path, sizeof(path), MSG_DIR, receiver, ".txt");
@@ -407,9 +407,9 @@ int append_message(const char *receiver, const char *sender, const char *content
     return 1;
 }
 
-// ---------- 日期辅助 ----------
+// ---------- Date helpers ----------
 
-// 解析 dd/mm/yyyy
+// Parse dd/mm/yyyy
 int parse_input_date(const char *s, struct tm *out) {
     int d, m, y;
     if (sscanf(s, "%d/%d/%d", &d, &m, &y) != 3) return 0;
@@ -421,7 +421,7 @@ int parse_input_date(const char *s, struct tm *out) {
     return 1;
 }
 
-// 解析 YYYY-MM-DD
+// Parse YYYY-MM-DD
 int parse_iso_date(const char *s, struct tm *out) {
     int y, m, d;
     if (sscanf(s, "%d-%d-%d", &y, &m, &d) != 3) return 0;
@@ -433,7 +433,7 @@ int parse_iso_date(const char *s, struct tm *out) {
     return 1;
 }
 
-// 日期比较（仅日期部分）
+// Date comparison (date only)
 int compare_date(struct tm *a, struct tm *b) {
     time_t ta = mktime(a);
     time_t tb = mktime(b);
@@ -446,7 +446,7 @@ int date_in_range(struct tm *target, struct tm *start, struct tm *end) {
     return compare_date(target, start) >= 0 && compare_date(target, end) <= 0;
 }
 
-// ---------- 好友/待确认操作 ----------
+// ---------- Friend/waiting operations ----------
 
 void show_list(char arr[][MAX_NAME], int count) {
     for (int i = 0; i < count; i++) {
@@ -454,7 +454,7 @@ void show_list(char arr[][MAX_NAME], int count) {
     }
 }
 
-// 读取空格分隔的索引选择
+// Parse space-separated index selections
 int parse_indexes(const char *line, int max, int *selected) {
     for (int i = 0; i < max; i++) selected[i] = 0;
     char buf[MAX_LINE];
@@ -477,7 +477,7 @@ int parse_indexes(const char *line, int max, int *selected) {
     return any;
 }
 
-// 添加好友请求
+// Add friend requests
 void add_friends_flow(const char *user) {
     char friends_path[MAX_LINE], waiting_path[MAX_LINE];
     build_path(friends_path, sizeof(friends_path), FRIEND_DIR, user, ".txt");
@@ -505,10 +505,10 @@ void add_friends_flow(const char *user) {
         } else if (list_contains(friend_list, friend_count, target)) {
             printf("%s is already in your friend list.\n", target);
         } else if (list_contains(waiting_list, waiting_count, target)) {
-            // 修改为 sample 所期望的提示词
+            // Changed to sample expected prompt
             printf("Friend request to %s is already pending.\n", target);
         } else {
-            // 检查是否已在对方待确认列表（即目标已向你发请求）
+            // Check if the target has already sent a request to you (i.e., target's waiting list contains you)
             char target_wait[MAX_LINE];
             build_path(target_wait, sizeof(target_wait), WAIT_DIR, target, ".txt");
             char target_wait_list[256][MAX_NAME];
@@ -530,7 +530,7 @@ void add_friends_flow(const char *user) {
     }
 }
 
-// 接受好友
+// Accept friends
 void accept_friends_flow(const char *user) {
     char waiting_path[MAX_LINE], friends_path[MAX_LINE];
     build_path(waiting_path, sizeof(waiting_path), WAIT_DIR, user, ".txt");
@@ -567,7 +567,7 @@ void accept_friends_flow(const char *user) {
     for (int i = 0; i < waiting_count; i++) {
         if (!selected[i]) continue;
         const char *target = waiting_list[i];
-        // 添加双方好友
+        // Add both sides as friends
         if (!list_contains(friend_list, friend_count, target)) {
             strncpy(friend_list[friend_count++], target, MAX_NAME - 1);
             friend_list[friend_count - 1][MAX_NAME - 1] = '\0';
@@ -584,7 +584,7 @@ void accept_friends_flow(const char *user) {
         printf("Friend requests updated for %s.\n", target);
         accepted_any = 1;
     }
-    // 清理等待列表
+    // Clean waiting list
     int new_wait_count = 0;
     for (int i = 0; i < waiting_count; i++) {
         if (!selected[i]) {
@@ -595,7 +595,7 @@ void accept_friends_flow(const char *user) {
     save_list(friends_path, friend_list, friend_count);
 }
 
-// 删除双方消息
+// Delete messages between two users
 void delete_messages_between(const char *user, const char *friend_name) {
     Message *msgs = NULL;
     int count = 0;
@@ -610,7 +610,7 @@ void delete_messages_between(const char *user, const char *friend_name) {
     free(msgs);
 }
 
-// 删除好友
+// Delete friends
 void delete_friends_flow(const char *user) {
     char friends_path[MAX_LINE];
     build_path(friends_path, sizeof(friends_path), FRIEND_DIR, user, ".txt");
@@ -636,7 +636,7 @@ void delete_friends_flow(const char *user) {
         for (int i = 0; i < friend_count; i++) selected[i] = 1;
     }
     
-    // 显示删除进度
+    // Show deletion progress
     for (int i = 0; i < friend_count; i++) {
         if (selected[i]) {
             const char *target = friend_list[i];
@@ -655,14 +655,14 @@ void delete_friends_flow(const char *user) {
     for (int i = 0; i < friend_count; i++) {
         if (selected[i]) {
             const char *target = friend_list[i];
-            // 从对方好友列表删除
+            // Remove from target's friend list
             char target_friend_path[MAX_LINE];
             build_path(target_friend_path, sizeof(target_friend_path), FRIEND_DIR, target, ".txt");
             char target_friends[256][MAX_NAME];
             int tcount = load_list(target_friend_path, target_friends, 256);
             tcount = list_remove(target_friends, tcount, user);
             save_list(target_friend_path, target_friends, tcount);
-            // 删除双方消息
+            // Delete messages on both sides
             delete_messages_between(user, target);
             delete_messages_between(target, user);
         } else {
@@ -673,7 +673,7 @@ void delete_friends_flow(const char *user) {
     printf("Friend list updated.\n");
 }
 
-// 展示好友
+// Show friends
 void show_friends_flow(const char *user) {
     char friends_path[MAX_LINE];
     build_path(friends_path, sizeof(friends_path), FRIEND_DIR, user, ".txt");
@@ -687,7 +687,7 @@ void show_friends_flow(const char *user) {
     show_list(friend_list, friend_count);
 }
 
-// ---------- 消息操作 ----------
+// ---------- Message operations ----------
 
 void send_message_flow(const char *user) {
     char friends_path[MAX_LINE];
@@ -779,9 +779,9 @@ void read_messages_flow(const char *user) {
     for (int i = 0; i < count; i++) {
         if (unread_only && !str_equal(msgs[i].status, "UNREAD")) continue;
         
-        // 解析时间字符串为更易读的格式
+        // Format timestamp for display
         if (strlen(msgs[i].time_str) == 8) {
-            // 格式已经是 HH:MM:SS
+            // Already HH:MM:SS
             printf("[%s %s] From: %s\n", msgs[i].date, msgs[i].time_str, msgs[i].sender);
         } else {
             printf("[%s] From: %s\n", msgs[i].date, msgs[i].sender);
@@ -836,14 +836,14 @@ void delete_messages_flow(const char *user) {
     for (int i = 0; i < count; i++) {
         struct tm msg_tm;
         if (!parse_iso_date(msgs[i].date, &msg_tm)) {
-            msgs[new_count++] = msgs[i]; // 无法解析则保留
+            msgs[new_count++] = msgs[i]; // Keep if cannot parse
             continue;
         }
         int in_range = date_in_range(&msg_tm, &start_tm, &end_tm);
         int match_account = str_equal(account, "all") || str_equal(msgs[i].sender, account);
         if (in_range && match_account) {
             removed_count++;
-            continue; // 删除
+            continue; // Delete
         }
         msgs[new_count++] = msgs[i];
     }
@@ -854,7 +854,7 @@ void delete_messages_flow(const char *user) {
            removed_count, account, start_str, end_str);
 }
 
-// ---------- 菜单 ----------
+// ---------- Menus ----------
 
 void manage_friends_menu(const char *user) {
     int choice = 0;
@@ -934,10 +934,10 @@ void main_service_menu(const char *user) {
     }
 }
 
-// ---------- 主入口 ----------
+// ---------- Main entry ----------
 
 int main(void) {
-    // 启用UTF-8支持（Windows）
+    // Enable UTF-8 support (Windows)
     enable_utf8_windows();
     
     ensure_base_dirs();
@@ -966,7 +966,7 @@ int main(void) {
         } else if (choice == 3) {
             printf("Byebye!\n");
             printf("Press any key to continue...\n");
-            getchar(); // 等待按键
+            getchar(); // wait for key
             running = 0;
         } else {
             printf("Invalid choice! Please enter a number between 1 and 3.\n");
