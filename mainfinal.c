@@ -273,7 +273,7 @@ void SaveList(const char *path, char arr[][MaxName], int cnt) {
 }
 
 // Does list contain target
-int list_contains(char arr[][MaxName], int cnt, const char *target) {
+int ListContain(char arr[][MaxName], int cnt, const char *target) {
     for (int i = 0; i < cnt; i++) {
         if (strEqual(arr[i], target)) return 1;
     }
@@ -281,7 +281,7 @@ int list_contains(char arr[][MaxName], int cnt, const char *target) {
 }
 
 // Remove element from list
-int list_remove(char arr[][MaxName], int cnt, const char *target) {
+int ListRemove(char arr[][MaxName], int cnt, const char *target) {
     int new_cnt = 0;
     for (int i = 0; i < cnt; i++) {
         if (!strEqual(arr[i], target)) {
@@ -299,7 +299,7 @@ void BuildPath(char *out, size_t len, const char *dir, const char *name, const c
 // ---------- Message read/write ----------
 
 // Load all messages into dynamic array
-int load_messages(const char *user, Message **out_msg, int *out_cnt) {
+int LoadMsg(const char *user, Message **out_msg, int *out_cnt) {
     char path[MaxLine];
     BuildPath(path, sizeof(path), MSG_DIR, user, ".txt");
     FILE *fp = fopen(path, "r");
@@ -373,7 +373,7 @@ int load_messages(const char *user, Message **out_msg, int *out_cnt) {
 }
 
 // Save message array to file
-int save_messages(const char *user, Message *msg, int cnt) {
+int SaveMsg(const char *user, Message *msg, int cnt) {
     char path[MaxLine];
     BuildPath(path, sizeof(path), MSG_DIR, user, ".txt");
     FILE *fp = fopen(path, "w");
@@ -456,8 +456,8 @@ void ShowList(char arr[][MaxName], int cnt) {//void ShowList
     }
 }
 
-// Parse space-separated index selections
-int parse_indexes(const char *line, int max, int *selected) {
+// mark those indexes selected in the selected array
+int SelectedIndex(const char *line, int max, int *selected) {
     for (int i = 0; i < max; i++) selected[i] = 0;
     char buf[MaxLine];
     strncpy(buf, line, sizeof(buf) - 1);//use strncpy
@@ -506,9 +506,9 @@ void add_friends_flow(const char *user) {
             printf("You cannot send a friend request to yourself.\n");
         } else if (!user_exists(target)) {
             printf("Accnt %s does not exist.\n", target);
-        } else if (list_contains(FriendList, friend_cnt, target)) {
+        } else if (ListContain(FriendList, friend_cnt, target)) {
             printf("%s is already in your friend list.\n", target);
-        } else if (list_contains(WaitingList, waiting_cnt, target)) {
+        } else if (ListContain(WaitingList, waiting_cnt, target)) {
             // Changed to sample expected prompt
             printf("Friend request to %s is already pending.\n", target);
         } else {
@@ -517,7 +517,7 @@ void add_friends_flow(const char *user) {
             BuildPath(target_wait, sizeof(target_wait), WAIT_DIR, target, ".txt");
             char target_wait_list[256][MaxName];
             int target_wait_cnt = LoadList(target_wait, target_wait_list, 256);//use function LoadList
-            if (list_contains(target_wait_list, target_wait_cnt, user)) {
+            if (ListContain(target_wait_list, target_wait_cnt, user)) {
                 printf("%s has sent friend request to you.\n", target);
             } else {
                 FILE *fp = fopen(target_wait, "a");
@@ -556,7 +556,7 @@ void accept_friends_flow(const char *user) {
     char line[MaxLine];
     PromptLine("Enter indices (space separated), press Enter to finish: ", line, sizeof(line));//use function
     int selected[256] = {0};
-    if (!parse_indexes(line, waiting_cnt + 2, selected)) {
+    if (!SelectedIndex(line, waiting_cnt + 2, selected)) {
         printf("No valid selection.\n");
         return;
     }
@@ -573,7 +573,7 @@ void accept_friends_flow(const char *user) {
         }
         const char *target = WaitingList[i];
         // Add both sides as friends
-        if (!list_contains(FriendList, friend_cnt, target)) {
+        if (!ListContain(FriendList, friend_cnt, target)) {
             strncpy(FriendList[friend_cnt++], target, MaxName - 1);
             FriendList[friend_cnt - 1][MaxName - 1] = '\0';
         }
@@ -581,7 +581,7 @@ void accept_friends_flow(const char *user) {
         BuildPath(TargetFriendPath, sizeof(TargetFriendPath), FRIEND_DIR, target, ".txt");
         char TargetFriend[256][MaxName];
         int TargetFriend_cnt = LoadList(TargetFriendPath, TargetFriend, 256);
-        if (!list_contains(TargetFriend, TargetFriend_cnt, user)) {
+        if (!ListContain(TargetFriend, TargetFriend_cnt, user)) {
             strncpy(TargetFriend[TargetFriend_cnt++], user, MaxName - 1);
             TargetFriend[TargetFriend_cnt - 1][MaxName - 1] = '\0';
             SaveList(TargetFriendPath, TargetFriend, TargetFriend_cnt);
@@ -603,7 +603,7 @@ void accept_friends_flow(const char *user) {
 void DeleteMsg_between(const char *user, const char *friend_name) {
     Message *msg = NULL;
     int cnt = 0;
-    if (!load_messages(user, &msg, &cnt)) {
+    if (!LoadMsg(user, &msg, &cnt)) {
         return;
     }
     int new_cnt = 0;
@@ -612,7 +612,7 @@ void DeleteMsg_between(const char *user, const char *friend_name) {
             msg[new_cnt++] = msg[i];
         }
     }
-    save_messages(user, msg, new_cnt);//use save_messages function
+    SaveMsg(user, msg, new_cnt);//use SaveMsg function
     free(msg);
 }
 // Delete friends
@@ -632,7 +632,7 @@ void delete_friends_flow(const char *user) {
     char line[MaxLine];
     PromptLine("Enter friend numbers (separated by space), press Enter to finish: ", line, sizeof(line));
     int selected[256] = {0};
-    if (!parse_indexes(line, friend_cnt + 2, selected)) {
+    if (!SelectedIndex(line, friend_cnt + 2, selected)) {
         printf("No valid selection.\n");
         return;
     }
@@ -667,7 +667,7 @@ void delete_friends_flow(const char *user) {
             BuildPath(TargetFriendPath, sizeof(TargetFriendPath), FRIEND_DIR, target, ".txt");
             char TargetFriend[256][MaxName];
             int tcnt = LoadList(TargetFriendPath, TargetFriend, 256);
-            tcnt = list_remove(TargetFriend, tcnt, user);
+            tcnt = ListRemove(TargetFriend, tcnt, user);
             SaveList(TargetFriendPath, TargetFriend, tcnt);
             // Delete messages on both sides
             DeleteMsg_between(user, target);
@@ -719,7 +719,7 @@ void send_message_flow(const char *user) {
     char selection[MaxLine];
     PromptLine("Enter friend numbers (separated by space), press Enter to finish: ", selection, sizeof(selection));
     int selected[256] = {0};
-    if (!parse_indexes(selection, friend_cnt + 2, selected)) {
+    if (!SelectedIndex(selection, friend_cnt + 2, selected)) {
         printf("No valid selection.\n");
         return;
     }
@@ -749,7 +749,7 @@ void send_message_flow(const char *user) {
 void read_messages_flow(const char *user) {
     Message *msg = NULL;
     int cnt = 0;
-    if (!load_messages(user, &msg, &cnt)) {
+    if (!LoadMsg(user, &msg, &cnt)) {
         printf("Failed to read messages.\n");
         return;
     }
@@ -808,14 +808,14 @@ void read_messages_flow(const char *user) {
         }
     }
     
-    save_messages(user, msg, cnt);
+    SaveMsg(user, msg, cnt);
     free(msg);
 }
 
 void delete_messages_flow(const char *user) {
     Message *msg = NULL;
     int cnt = 0;
-    if (!load_messages(user, &msg, &cnt)) {
+    if (!LoadMsg(user, &msg, &cnt)) {
         printf("Failed to read messages.\n");
         return;
     }
@@ -854,7 +854,7 @@ void delete_messages_flow(const char *user) {
         msg[new_cnt++] = msg[i];
     }
     
-    save_messages(user, msg, new_cnt);
+    SaveMsg(user, msg, new_cnt);
     free(msg);
     printf("Removed %d message(s) from %s in period %s - %s.\n", 
            removed_cnt, accnt, start_str, end_str);
