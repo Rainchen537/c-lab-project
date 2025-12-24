@@ -310,15 +310,17 @@ int load_messages(const char *user, Message **out_msgs, int *out_count) {
     }
     int capacity = 32;
     int count = 0;
-    Message *arr = (Message *)malloc(sizeof(Message) * capacity);
+    Message *arr = (Message *)malloc(sizeof(Message) * capacity);//dynamic memory allocation for messages
     if (!arr) {
         fclose(fp);
         return 0;
     }
     char line[MAX_LINE];
-    while (fgets(line, sizeof(line), fp)) {
+    while (fgets(line, sizeof(line), fp)) {//use fgetsto get string 
         trim_newline(line);
-        if (strlen(line) == 0) continue;
+        if (strlen(line) == 0) {
+            continue;
+        }
 
         // Manual parse: split by '|' - take first four fields, rest as content (allow '|' in content)
         char *p = line;
