@@ -448,9 +448,9 @@ int date_in_range(struct tm *target, struct tm *start, struct tm *end) {
 
 // ---------- Friend/waiting operations ----------
 
-void show_list(char arr[][MAX_NAME], int count) {
-    for (int i = 0; i < count; i++) {
-        printf("%2d. %s\n", i + 1, arr[i]);
+void show_list(char arr[][MAX_NAME], int count) {//void show_list
+    for (int i = 0; i < count; i++) {//use loop
+        printf("%2d. %s\n", i + 1, arr[i]);//printf
     }
 }
 
@@ -458,21 +458,21 @@ void show_list(char arr[][MAX_NAME], int count) {
 int parse_indexes(const char *line, int max, int *selected) {
     for (int i = 0; i < max; i++) selected[i] = 0;
     char buf[MAX_LINE];
-    strncpy(buf, line, sizeof(buf) - 1);
+    strncpy(buf, line, sizeof(buf) - 1);//use strncpy
     buf[sizeof(buf) - 1] = '\0';
-    char *token = strtok(buf, " ");
+    char *token = strtok(buf, " ");//use strtok
     int any = 0;
     while (token) {
         if (str_equal(token, "All") || str_equal(token, "all")) {
             for (int i = 0; i < max; i++) selected[i] = 1;
             return 1;
         }
-        int idx = atoi(token);
+        int idx = atoi(token);//change char into int
         if (idx >= 1 && idx <= max) {
             selected[idx - 1] = 1;
             any = 1;
         }
-        token = strtok(NULL, " ");
+        token = strtok(NULL, " ");//use strtok
     }
     return any;
 }
@@ -490,7 +490,9 @@ void add_friends_flow(const char *user) {
 
     char line[MAX_LINE];
     prompt_line("Enter usernames to add (in one line separated by space): ", line, sizeof(line));
-    if (strlen(line) == 0) return;
+    if (strlen(line) == 0){
+        return;
+    }
 
     char buf[MAX_LINE];
     strncpy(buf, line, sizeof(buf) - 1);
@@ -512,7 +514,7 @@ void add_friends_flow(const char *user) {
             char target_wait[MAX_LINE];
             build_path(target_wait, sizeof(target_wait), WAIT_DIR, target, ".txt");
             char target_wait_list[256][MAX_NAME];
-            int target_wait_count = load_list(target_wait, target_wait_list, 256);
+            int target_wait_count = load_list(target_wait, target_wait_list, 256);//use function load_list
             if (list_contains(target_wait_list, target_wait_count, user)) {
                 printf("%s has sent friend request to you.\n", target);
             } else {
@@ -546,11 +548,11 @@ void accept_friends_flow(const char *user) {
         return;
     }
     printf("Pending friend requests for %s:\n", user);
-    show_list(waiting_list, waiting_count);
-    printf("%2d. All\n%2d. Back\n", waiting_count + 1, waiting_count + 2);
+    show_list(waiting_list, waiting_count);//use show_list function
+    printf("%2d. All\n%2d. Back\n", waiting_count + 1, waiting_count + 2);//printf result
 
     char line[MAX_LINE];
-    prompt_line("Enter indices (space separated), press Enter to finish: ", line, sizeof(line));
+    prompt_line("Enter indices (space separated), press Enter to finish: ", line, sizeof(line));//use function
     int selected[256] = {0};
     if (!parse_indexes(line, waiting_count + 2, selected)) {
         printf("No valid selection.\n");
@@ -562,10 +564,11 @@ void accept_friends_flow(const char *user) {
     if (selected[waiting_count]) {
         for (int i = 0; i < waiting_count; i++) selected[i] = 1;
     }
-
     int accepted_any = 0;
     for (int i = 0; i < waiting_count; i++) {
-        if (!selected[i]) continue;
+        if (!selected[i]) {
+            continue;
+        }
         const char *target = waiting_list[i];
         // Add both sides as friends
         if (!list_contains(friend_list, friend_count, target)) {
@@ -588,28 +591,28 @@ void accept_friends_flow(const char *user) {
     int new_wait_count = 0;
     for (int i = 0; i < waiting_count; i++) {
         if (!selected[i]) {
-            strcpy(waiting_list[new_wait_count++], waiting_list[i]);
+            strcpy(waiting_list[new_wait_count++], waiting_list[i]);//use strcpy
         }
     }
-    save_list(waiting_path, waiting_list, new_wait_count);
-    save_list(friends_path, friend_list, friend_count);
+    save_list(waiting_path, waiting_list, new_wait_count);//save the process
+    save_list(friends_path, friend_list, friend_count);//save the process
 }
-
 // Delete messages between two users
 void delete_messages_between(const char *user, const char *friend_name) {
     Message *msgs = NULL;
     int count = 0;
-    if (!load_messages(user, &msgs, &count)) return;
+    if (!load_messages(user, &msgs, &count)) {
+        return;
+    }
     int new_count = 0;
     for (int i = 0; i < count; i++) {
         if (!str_equal(msgs[i].sender, friend_name)) {
             msgs[new_count++] = msgs[i];
         }
     }
-    save_messages(user, msgs, new_count);
+    save_messages(user, msgs, new_count);//use save_messages function
     free(msgs);
 }
-
 // Delete friends
 void delete_friends_flow(const char *user) {
     char friends_path[MAX_LINE];
@@ -631,7 +634,9 @@ void delete_friends_flow(const char *user) {
         printf("No valid selection.\n");
         return;
     }
-    if (selected[friend_count + 1]) return; // Back
+    if (selected[friend_count + 1]) {
+        return;
+    }// Back
     if (selected[friend_count]) {
         for (int i = 0; i < friend_count; i++) selected[i] = 1;
     }
@@ -666,13 +671,12 @@ void delete_friends_flow(const char *user) {
             delete_messages_between(user, target);
             delete_messages_between(target, user);
         } else {
-            strcpy(friend_list[new_count++], friend_list[i]);
+            strcpy(friend_list[new_count++], friend_list[i]);//use strcpy
         }
     }
-    save_list(friends_path, friend_list, new_count);
+    save_list(friends_path, friend_list, new_count);//use save_list function
     printf("Friend list updated.\n");
 }
-
 // Show friends
 void show_friends_flow(const char *user) {
     char friends_path[MAX_LINE];
