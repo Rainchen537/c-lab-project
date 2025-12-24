@@ -31,17 +31,17 @@
 #define USER_DB "data" PATH_SEP "users.txt"
 
 // Character length limits
-#define MAX_NAME 32
-#define MAX_PWD 32
-#define MAX_LINE 512
-#define MAX_MESSAGE 512
+#define MaxName 32
+#define MaxPwd 32
+#define MaxLine 512
+#define MaxMessage 512
 
 typedef struct {
     char status[8];   // UNREAD or READ
     char date[11];    // YYYY-MM-DD
-    char time_str[9]; // HH:MM:SS
-    char sender[MAX_NAME];
-    char content[MAX_MESSAGE];
+    char strTime[9]; // HH:MM:SS
+    char sender[MaxName];
+    char content[MaxMessage];
 } Message;
 
 // ---------- Basic utilities ----------
@@ -56,19 +56,19 @@ void trim_newline(char *s) {
 }
 
 // Simple string equality check
-int str_equal(const char *a, const char *b) {
+int strEqual(const char *a, const char *b) {
     return strcmp(a, b) == 0;
 }
 
 // Clear input buffer - cross-platform version
-void clear_stdin(void) {
+void ClearStdin(void) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {}
 }
 
 // Recursively create directories - cross-platform version
 int create_directory_recursive(const char *path) {
-    char temp[MAX_LINE];
+    char temp[MaxLine];
     char *p = NULL;
     size_t len;
     
@@ -120,7 +120,7 @@ void ensure_base_dirs(void) {
 }
 
 // Read a line of input (including spaces)
-void prompt_line(const char *tip, char *buf, size_t len) {
+void PromptLine(const char *tip, char *buf, size_t len) {
     printf("%s", tip);
     if (fgets(buf, (int)len, stdin) == NULL) {
         buf[0] = '\0';
@@ -131,17 +131,17 @@ void prompt_line(const char *tip, char *buf, size_t len) {
 
 // ---------- User management ----------
 
-// Check if user account exists
+// Check if user accnt exists
 int user_exists(const char *name) {
     FILE *fp = fopen(USER_DB, "r");
     if (!fp) return 0;
-    char line[MAX_LINE];
+    char line[MaxLine];
     while (fgets(line, sizeof(line), fp)) {
         trim_newline(line);
         char *sep = strchr(line, '|');
         if (!sep) continue;
         *sep = '\0';
-        if (str_equal(line, name)) {
+        if (strEqual(line, name)) {
             fclose(fp);
             return 1;
         }
@@ -150,7 +150,7 @@ int user_exists(const char *name) {
     return 0;
 }
 
-// Add new account
+// Add new accnt
 int add_user(const char *name, const char *pwd) {
     FILE *fp = fopen(USER_DB, "a");
     if (!fp) {
@@ -167,14 +167,14 @@ int add_user(const char *name, const char *pwd) {
 int verify_user(const char *name, const char *pwd) {
     FILE *fp = fopen(USER_DB, "r");
     if (!fp) return 0;
-    char line[MAX_LINE];
+    char line[MaxLine];
     while (fgets(line, sizeof(line), fp)) {
         trim_newline(line);
         char *sep = strchr(line, '|');
         if (!sep) continue;
         *sep = '\0';
         const char *stored_pwd = sep + 1;
-        if (str_equal(line, name) && str_equal(stored_pwd, pwd)) {
+        if (strEqual(line, name) && strEqual(stored_pwd, pwd)) {
             fclose(fp);
             return 1;
         }
@@ -185,21 +185,21 @@ int verify_user(const char *name, const char *pwd) {
 
 // Registration flow
 void register_flow(void) {
-    char name[MAX_NAME];
-    char pwd1[MAX_PWD];
-    char pwd2[MAX_PWD];
-    prompt_line("Enter account name: ", name, sizeof(name));
+    char name[MaxName];
+    char pwd1[MaxPwd];
+    char pwd2[MaxPwd];
+    PromptLine("Enter accnt name: ", name, sizeof(name));
     if (strchr(name, ' ') || strlen(name) == 0) {
         printf("Invalid username: cannot contain spaces or be empty.\n");
         return;
     }
     if (user_exists(name)) {
-        printf("Account name already exists.\n");
+        printf("Accnt name already exists.\n");
         return;
     }
-    prompt_line("Enter password: ", pwd1, sizeof(pwd1));
-    prompt_line("Confirm password: ", pwd2, sizeof(pwd2));
-    if (!str_equal(pwd1, pwd2)) {
+    PromptLine("Enter password: ", pwd1, sizeof(pwd1));
+    PromptLine("Confirm password: ", pwd2, sizeof(pwd2));
+    if (!strEqual(pwd1, pwd2)) {
         printf("Passwords do not match. Registration failed.\n");
         return;
     }
@@ -212,10 +212,10 @@ void register_flow(void) {
 
 // Login flow
 int login_flow(char *out_name) {
-    char name[MAX_NAME];
-    char pwd[MAX_PWD];
-    prompt_line("Please input your account name: ", name, sizeof(name));
-    prompt_line("and password: ", pwd, sizeof(pwd));
+    char name[MaxName];
+    char pwd[MaxPwd];
+    PromptLine("Please input your accnt name: ", name, sizeof(name));
+    PromptLine("and password: ", pwd, sizeof(pwd));
     
     // Check whether any user exists
     FILE *fp = fopen(USER_DB, "r");
@@ -226,7 +226,7 @@ int login_flow(char *out_name) {
     fclose(fp);
     
     if (!user_exists(name)) {
-        printf("Warning! Account name not found.\n");
+        printf("Warning! Accnt name not found.\n");
         return 0;
     }
     
@@ -243,79 +243,79 @@ int login_flow(char *out_name) {
 // ---------- List file utilities (friends/waiting) ----------
 
 // Load string list file
-int load_list(const char *path, char arr[][MAX_NAME], int max_count) {
+int LoadList(const char *path, char arr[][MaxName], int max_cnt) {
     FILE *fp = fopen(path, "r");
     if (!fp) return 0;
-    int count = 0;
-    char line[MAX_LINE];
-    while (count < max_count && fgets(line, sizeof(line), fp)) {
+    int cnt = 0;
+    char line[MaxLine];
+    while (cnt < max_cnt && fgets(line, sizeof(line), fp)) {
         trim_newline(line);
         if (strlen(line) == 0) continue;
-        strncpy(arr[count], line, MAX_NAME - 1);
-        arr[count][MAX_NAME - 1] = '\0';
-        count++;
+        strncpy(arr[cnt], line, MaxName - 1);
+        arr[cnt][MaxName - 1] = '\0';
+        cnt++;
     }
     fclose(fp);
-    return count;
+    return cnt;
 }
 
 // Save string list file
-void save_list(const char *path, char arr[][MAX_NAME], int count) {
+void SaveList(const char *path, char arr[][MaxName], int cnt) {
     FILE *fp = fopen(path, "w");
     if (!fp) {
         printf("Failed to write file: %s\n", path);
         return;
     }
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < cnt; i++) {
         fprintf(fp, "%s\n", arr[i]);
     }
     fclose(fp);
 }
 
 // Does list contain target
-int list_contains(char arr[][MAX_NAME], int count, const char *target) {
-    for (int i = 0; i < count; i++) {
-        if (str_equal(arr[i], target)) return 1;
+int list_contains(char arr[][MaxName], int cnt, const char *target) {
+    for (int i = 0; i < cnt; i++) {
+        if (strEqual(arr[i], target)) return 1;
     }
     return 0;
 }
 
 // Remove element from list
-int list_remove(char arr[][MAX_NAME], int count, const char *target) {
-    int new_count = 0;
-    for (int i = 0; i < count; i++) {
-        if (!str_equal(arr[i], target)) {
-            strcpy(arr[new_count++], arr[i]);
+int list_remove(char arr[][MaxName], int cnt, const char *target) {
+    int new_cnt = 0;
+    for (int i = 0; i < cnt; i++) {
+        if (!strEqual(arr[i], target)) {
+            strcpy(arr[new_cnt++], arr[i]);
         }
     }
-    return new_count;
+    return new_cnt;
 }
 
 // Build path - using platform-specific separator
-void build_path(char *out, size_t len, const char *dir, const char *name, const char *suffix) {
+void BuildPath(char *out, size_t len, const char *dir, const char *name, const char *suffix) {
     snprintf(out, len, "%s" PATH_SEP "%s%s", dir, name, suffix);
 }
 
 // ---------- Message read/write ----------
 
 // Load all messages into dynamic array
-int load_messages(const char *user, Message **out_msgs, int *out_count) {
-    char path[MAX_LINE];
-    build_path(path, sizeof(path), MSG_DIR, user, ".txt");
+int load_messages(const char *user, Message **out_msg, int *out_cnt) {
+    char path[MaxLine];
+    BuildPath(path, sizeof(path), MSG_DIR, user, ".txt");
     FILE *fp = fopen(path, "r");
     if (!fp) {
-        *out_msgs = NULL;
-        *out_count = 0;
+        *out_msg = NULL;
+        *out_cnt = 0;
         return 1;
     }
     int capacity = 32;
-    int count = 0;
+    int cnt = 0;
     Message *arr = (Message *)malloc(sizeof(Message) * capacity);//dynamic memory allocation for messages
     if (!arr) {
         fclose(fp);
         return 0;
     }
-    char line[MAX_LINE];
+    char line[MaxLine];
     while (fgets(line, sizeof(line), fp)) {//use fgetsto get string 
         trim_newline(line);
         if (strlen(line) == 0) {
@@ -347,14 +347,14 @@ int load_messages(const char *user, Message **out_msgs, int *out_count) {
         msg.status[sizeof(msg.status) - 1] = '\0';
         strncpy(msg.date, fields[1], sizeof(msg.date) - 1);
         msg.date[sizeof(msg.date) - 1] = '\0';
-        strncpy(msg.time_str, fields[2], sizeof(msg.time_str) - 1);
-        msg.time_str[sizeof(msg.time_str) - 1] = '\0';
+        strncpy(msg.strTime, fields[2], sizeof(msg.strTime) - 1);
+        msg.strTime[sizeof(msg.strTime) - 1] = '\0';
         strncpy(msg.sender, fields[3], sizeof(msg.sender) - 1);
         msg.sender[sizeof(msg.sender) - 1] = '\0';
         strncpy(msg.content, fields[4], sizeof(msg.content) - 1);
         msg.content[sizeof(msg.content) - 1] = '\0';
 
-        if (count >= capacity) {
+        if (cnt >= capacity) {
             capacity *= 2;
             Message *tmp = (Message *)realloc(arr, sizeof(Message) * capacity);
             if (!tmp) {
@@ -364,35 +364,35 @@ int load_messages(const char *user, Message **out_msgs, int *out_count) {
             }
             arr = tmp;
         }
-        arr[count++] = msg;
+        arr[cnt++] = msg;
     }
     fclose(fp);
-    *out_msgs = arr;
-    *out_count = count;
+    *out_msg = arr;
+    *out_cnt = cnt;
     return 1;
 }
 
 // Save message array to file
-int save_messages(const char *user, Message *msgs, int count) {
-    char path[MAX_LINE];
-    build_path(path, sizeof(path), MSG_DIR, user, ".txt");
+int save_messages(const char *user, Message *msg, int cnt) {
+    char path[MaxLine];
+    BuildPath(path, sizeof(path), MSG_DIR, user, ".txt");
     FILE *fp = fopen(path, "w");
     if (!fp) {
         printf("Failed to write message file: %s\n", path);
         return 0;
     }
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < cnt; i++) {
         fprintf(fp, "%s|%s|%s|%s|%s\n",
-                msgs[i].status, msgs[i].date, msgs[i].time_str, msgs[i].sender, msgs[i].content);
+                msg[i].status, msg[i].date, msg[i].strTime, msg[i].sender, msg[i].content);
     }
     fclose(fp);
     return 1;
 }
 
 // Append message to receiver's file
-int append_message(const char *receiver, const char *sender, const char *content) {
-    char path[MAX_LINE];
-    build_path(path, sizeof(path), MSG_DIR, receiver, ".txt");
+int AppendMsg(const char *receiver, const char *sender, const char *content) {
+    char path[MaxLine];
+    BuildPath(path, sizeof(path), MSG_DIR, receiver, ".txt");
     FILE *fp = fopen(path, "a");
     if (!fp) {
         printf("Cannot write to message file: %s\n", path);
@@ -450,8 +450,8 @@ int date_in_range(struct tm *target, struct tm *start, struct tm *end) {
 
 // ---------- Friend/waiting operations ----------
 
-void show_list(char arr[][MAX_NAME], int count) {//void show_list
-    for (int i = 0; i < count; i++) {//use loop
+void ShowList(char arr[][MaxName], int cnt) {//void ShowList
+    for (int i = 0; i < cnt; i++) {//use loop
         printf("%2d. %s\n", i + 1, arr[i]);//printf
     }
 }
@@ -459,13 +459,13 @@ void show_list(char arr[][MAX_NAME], int count) {//void show_list
 // Parse space-separated index selections
 int parse_indexes(const char *line, int max, int *selected) {
     for (int i = 0; i < max; i++) selected[i] = 0;
-    char buf[MAX_LINE];
+    char buf[MaxLine];
     strncpy(buf, line, sizeof(buf) - 1);//use strncpy
     buf[sizeof(buf) - 1] = '\0';
     char *token = strtok(buf, " ");//use strtok
     int any = 0;
     while (token) {
-        if (str_equal(token, "All") || str_equal(token, "all")) {
+        if (strEqual(token, "All") || strEqual(token, "all")) {
             for (int i = 0; i < max; i++) selected[i] = 1;
             return 1;
         }
@@ -481,43 +481,43 @@ int parse_indexes(const char *line, int max, int *selected) {
 
 // Add friend requests
 void add_friends_flow(const char *user) {
-    char friends_path[MAX_LINE], waiting_path[MAX_LINE];
-    build_path(friends_path, sizeof(friends_path), FRIEND_DIR, user, ".txt");
-    build_path(waiting_path, sizeof(waiting_path), WAIT_DIR, user, ".txt");
+    char FriendsPath[MaxLine], WaitingPath[MaxLine];
+    BuildPath(FriendsPath, sizeof(FriendsPath), FRIEND_DIR, user, ".txt");
+    BuildPath(WaitingPath, sizeof(WaitingPath), WAIT_DIR, user, ".txt");
 
-    char friend_list[256][MAX_NAME];
-    char waiting_list[256][MAX_NAME];
-    int friend_count = load_list(friends_path, friend_list, 256);
-    int waiting_count = load_list(waiting_path, waiting_list, 256);
+    char FriendList[256][MaxName];
+    char WaitingList[256][MaxName];
+    int friend_cnt = LoadList(FriendsPath, FriendList, 256);
+    int waiting_cnt = LoadList(WaitingPath, WaitingList, 256);
 
-    char line[MAX_LINE];
-    prompt_line("Enter usernames to add (in one line separated by space): ", line, sizeof(line));
+    char line[MaxLine];
+    PromptLine("Enter usernames to add (in one line separated by space): ", line, sizeof(line));
     if (strlen(line) == 0){
         return;
     }
 
-    char buf[MAX_LINE];
+    char buf[MaxLine];
     strncpy(buf, line, sizeof(buf) - 1);
     buf[sizeof(buf) - 1] = '\0';
     char *token = strtok(buf, " ");
     while (token) {
         const char *target = token;
-        if (str_equal(target, user)) {
+        if (strEqual(target, user)) {
             printf("You cannot send a friend request to yourself.\n");
         } else if (!user_exists(target)) {
-            printf("Account %s does not exist.\n", target);
-        } else if (list_contains(friend_list, friend_count, target)) {
+            printf("Accnt %s does not exist.\n", target);
+        } else if (list_contains(FriendList, friend_cnt, target)) {
             printf("%s is already in your friend list.\n", target);
-        } else if (list_contains(waiting_list, waiting_count, target)) {
+        } else if (list_contains(WaitingList, waiting_cnt, target)) {
             // Changed to sample expected prompt
             printf("Friend request to %s is already pending.\n", target);
         } else {
             // Check if the target has already sent a request to you (i.e., target's waiting list contains you)
-            char target_wait[MAX_LINE];
-            build_path(target_wait, sizeof(target_wait), WAIT_DIR, target, ".txt");
-            char target_wait_list[256][MAX_NAME];
-            int target_wait_count = load_list(target_wait, target_wait_list, 256);//use function load_list
-            if (list_contains(target_wait_list, target_wait_count, user)) {
+            char target_wait[MaxLine];
+            BuildPath(target_wait, sizeof(target_wait), WAIT_DIR, target, ".txt");
+            char target_wait_list[256][MaxName];
+            int target_wait_cnt = LoadList(target_wait, target_wait_list, 256);//use function LoadList
+            if (list_contains(target_wait_list, target_wait_cnt, user)) {
                 printf("%s has sent friend request to you.\n", target);
             } else {
                 FILE *fp = fopen(target_wait, "a");
@@ -536,120 +536,120 @@ void add_friends_flow(const char *user) {
 
 // Accept friends
 void accept_friends_flow(const char *user) {
-    char waiting_path[MAX_LINE], friends_path[MAX_LINE];
-    build_path(waiting_path, sizeof(waiting_path), WAIT_DIR, user, ".txt");
-    build_path(friends_path, sizeof(friends_path), FRIEND_DIR, user, ".txt");
+    char WaitingPath[MaxLine], FriendsPath[MaxLine];
+    BuildPath(WaitingPath, sizeof(WaitingPath), WAIT_DIR, user, ".txt");
+    BuildPath(FriendsPath, sizeof(FriendsPath), FRIEND_DIR, user, ".txt");
 
-    char waiting_list[256][MAX_NAME];
-    char friend_list[256][MAX_NAME];
-    int waiting_count = load_list(waiting_path, waiting_list, 256);
-    int friend_count = load_list(friends_path, friend_list, 256);
+    char WaitingList[256][MaxName];
+    char FriendList[256][MaxName];
+    int waiting_cnt = LoadList(WaitingPath, WaitingList, 256);
+    int friend_cnt = LoadList(FriendsPath, FriendList, 256);
 
-    if (waiting_count == 0) {
+    if (waiting_cnt == 0) {
         printf("No pending friend requests for %s.\n", user);
         return;
     }
     printf("Pending friend requests for %s:\n", user);
-    show_list(waiting_list, waiting_count);//use show_list function
-    printf("%2d. All\n%2d. Back\n", waiting_count + 1, waiting_count + 2);//printf result
+    ShowList(WaitingList, waiting_cnt);//use ShowList function to show
+    printf("%2d. All\n%2d. Back\n", waiting_cnt + 1, waiting_cnt + 2);//print the result
 
-    char line[MAX_LINE];
-    prompt_line("Enter indices (space separated), press Enter to finish: ", line, sizeof(line));//use function
+    char line[MaxLine];
+    PromptLine("Enter indices (space separated), press Enter to finish: ", line, sizeof(line));//use function
     int selected[256] = {0};
-    if (!parse_indexes(line, waiting_count + 2, selected)) {
+    if (!parse_indexes(line, waiting_cnt + 2, selected)) {
         printf("No valid selection.\n");
         return;
     }
     // Back
-    if (selected[waiting_count + 1]) return;
+    if (selected[waiting_cnt + 1]) return;
     // All
-    if (selected[waiting_count]) {
-        for (int i = 0; i < waiting_count; i++) selected[i] = 1;
+    if (selected[waiting_cnt]) {
+        for (int i = 0; i < waiting_cnt; i++) selected[i] = 1;
     }
     int accepted_any = 0;
-    for (int i = 0; i < waiting_count; i++) {
+    for (int i = 0; i < waiting_cnt; i++) {
         if (!selected[i]) {
             continue;
         }
-        const char *target = waiting_list[i];
+        const char *target = WaitingList[i];
         // Add both sides as friends
-        if (!list_contains(friend_list, friend_count, target)) {
-            strncpy(friend_list[friend_count++], target, MAX_NAME - 1);
-            friend_list[friend_count - 1][MAX_NAME - 1] = '\0';
+        if (!list_contains(FriendList, friend_cnt, target)) {
+            strncpy(FriendList[friend_cnt++], target, MaxName - 1);
+            FriendList[friend_cnt - 1][MaxName - 1] = '\0';
         }
-        char target_friend_path[MAX_LINE];
-        build_path(target_friend_path, sizeof(target_friend_path), FRIEND_DIR, target, ".txt");
-        char target_friends[256][MAX_NAME];
-        int target_friend_count = load_list(target_friend_path, target_friends, 256);
-        if (!list_contains(target_friends, target_friend_count, user)) {
-            strncpy(target_friends[target_friend_count++], user, MAX_NAME - 1);
-            target_friends[target_friend_count - 1][MAX_NAME - 1] = '\0';
-            save_list(target_friend_path, target_friends, target_friend_count);
+        char TargetFriendPath[MaxLine];
+        BuildPath(TargetFriendPath, sizeof(TargetFriendPath), FRIEND_DIR, target, ".txt");
+        char TargetFriend[256][MaxName];
+        int TargetFriend_cnt = LoadList(TargetFriendPath, TargetFriend, 256);
+        if (!list_contains(TargetFriend, TargetFriend_cnt, user)) {
+            strncpy(TargetFriend[TargetFriend_cnt++], user, MaxName - 1);
+            TargetFriend[TargetFriend_cnt - 1][MaxName - 1] = '\0';
+            SaveList(TargetFriendPath, TargetFriend, TargetFriend_cnt);
         }
         printf("Friend requests updated for %s.\n", target);
         accepted_any = 1;
     }
     // Clean waiting list
-    int new_wait_count = 0;
-    for (int i = 0; i < waiting_count; i++) {
+    int NewWait_cnt = 0;
+    for (int i = 0; i < waiting_cnt; i++) {
         if (!selected[i]) {
-            strcpy(waiting_list[new_wait_count++], waiting_list[i]);//use strcpy
+            strcpy(WaitingList[NewWait_cnt++], WaitingList[i]);//use strcpy
         }
     }
-    save_list(waiting_path, waiting_list, new_wait_count);//save the process
-    save_list(friends_path, friend_list, friend_count);//save the process
+    SaveList(WaitingPath, WaitingList, NewWait_cnt);//save the process
+    SaveList(FriendsPath, FriendList, friend_cnt);//save the process
 }
 // Delete messages between two users
-void delete_messages_between(const char *user, const char *friend_name) {
-    Message *msgs = NULL;
-    int count = 0;
-    if (!load_messages(user, &msgs, &count)) {
+void DeleteMsg_between(const char *user, const char *friend_name) {
+    Message *msg = NULL;
+    int cnt = 0;
+    if (!load_messages(user, &msg, &cnt)) {
         return;
     }
-    int new_count = 0;
-    for (int i = 0; i < count; i++) {
-        if (!str_equal(msgs[i].sender, friend_name)) {
-            msgs[new_count++] = msgs[i];
+    int new_cnt = 0;
+    for (int i = 0; i < cnt; i++) {
+        if (!strEqual(msg[i].sender, friend_name)) {
+            msg[new_cnt++] = msg[i];
         }
     }
-    save_messages(user, msgs, new_count);//use save_messages function
-    free(msgs);
+    save_messages(user, msg, new_cnt);//use save_messages function
+    free(msg);
 }
 // Delete friends
 void delete_friends_flow(const char *user) {
-    char friends_path[MAX_LINE];
-    build_path(friends_path, sizeof(friends_path), FRIEND_DIR, user, ".txt");
-    char friend_list[256][MAX_NAME];
-    int friend_count = load_list(friends_path, friend_list, 256);
-    if (friend_count == 0) {
+    char FriendsPath[MaxLine];
+    BuildPath(FriendsPath, sizeof(FriendsPath), FRIEND_DIR, user, ".txt");
+    char FriendList[256][MaxName];
+    int friend_cnt = LoadList(FriendsPath, FriendList, 256);
+    if (friend_cnt == 0) {
         printf("You have no friends.\n");
         return;
     }
     printf("Your friends:\n");
-    show_list(friend_list, friend_count);
-    printf("%2d. All\n%2d. Back\n", friend_count + 1, friend_count + 2);
+    ShowList(FriendList, friend_cnt);
+    printf("%2d. All\n%2d. Back\n", friend_cnt + 1, friend_cnt + 2);
 
-    char line[MAX_LINE];
-    prompt_line("Enter friend numbers (separated by space), press Enter to finish: ", line, sizeof(line));
+    char line[MaxLine];
+    PromptLine("Enter friend numbers (separated by space), press Enter to finish: ", line, sizeof(line));
     int selected[256] = {0};
-    if (!parse_indexes(line, friend_count + 2, selected)) {
+    if (!parse_indexes(line, friend_cnt + 2, selected)) {
         printf("No valid selection.\n");
         return;
     }
-    if (selected[friend_count + 1]) {
+    if (selected[friend_cnt + 1]) {
         return;
     }// Back
-    if (selected[friend_count]) {
-        for (int i = 0; i < friend_count; i++) selected[i] = 1;
+    if (selected[friend_cnt]) {
+        for (int i = 0; i < friend_cnt; i++) selected[i] = 1;
     }
     
     // Show deletion progress
-    for (int i = 0; i < friend_count; i++) {
+    for (int i = 0; i < friend_cnt; i++) {
         if (selected[i]) {
-            const char *target = friend_list[i];
-            if (friend_count == 1) {
+            const char *target = FriendList[i];
+            if (friend_cnt == 1) {
                 printf("Deleting %s...\n", target);
-            } else if (selected[friend_count]) {
+            } else if (selected[friend_cnt]) {
                 printf("Deleting all...\n");
                 break;
             } else {
@@ -658,105 +658,105 @@ void delete_friends_flow(const char *user) {
         }
     }
     
-    int new_count = 0;
-    for (int i = 0; i < friend_count; i++) {
+    int new_cnt = 0;
+    for (int i = 0; i < friend_cnt; i++) {
         if (selected[i]) {
-            const char *target = friend_list[i];
+            const char *target = FriendList[i];
             // Remove from target's friend list
-            char target_friend_path[MAX_LINE];
-            build_path(target_friend_path, sizeof(target_friend_path), FRIEND_DIR, target, ".txt");
-            char target_friends[256][MAX_NAME];
-            int tcount = load_list(target_friend_path, target_friends, 256);
-            tcount = list_remove(target_friends, tcount, user);
-            save_list(target_friend_path, target_friends, tcount);
+            char TargetFriendPath[MaxLine];
+            BuildPath(TargetFriendPath, sizeof(TargetFriendPath), FRIEND_DIR, target, ".txt");
+            char TargetFriend[256][MaxName];
+            int tcnt = LoadList(TargetFriendPath, TargetFriend, 256);
+            tcnt = list_remove(TargetFriend, tcnt, user);
+            SaveList(TargetFriendPath, TargetFriend, tcnt);
             // Delete messages on both sides
-            delete_messages_between(user, target);
-            delete_messages_between(target, user);
+            DeleteMsg_between(user, target);
+            DeleteMsg_between(target, user);
         } else {
-            strcpy(friend_list[new_count++], friend_list[i]);//use strcpy
+            strcpy(FriendList[new_cnt++], FriendList[i]);//use strcpy
         }
     }
-    save_list(friends_path, friend_list, new_count);//use save_list function
+    SaveList(FriendsPath, FriendList, new_cnt);//use SaveList function
     printf("Friend list updated.\n");
 }
 // Show friends
 void show_friends_flow(const char *user) {
-    char friends_path[MAX_LINE];
-    build_path(friends_path, sizeof(friends_path), FRIEND_DIR, user, ".txt");
-    char friend_list[256][MAX_NAME];
-    int friend_count = load_list(friends_path, friend_list, 256);
-    if (friend_count == 0) {
+    char FriendsPath[MaxLine];
+    BuildPath(FriendsPath, sizeof(FriendsPath), FRIEND_DIR, user, ".txt");
+    char FriendList[256][MaxName];
+    int friend_cnt = LoadList(FriendsPath, FriendList, 256);
+    if (friend_cnt == 0) {
         printf("You have no friends.\n");
         return;
     }
     printf("Your friends:\n");
-    show_list(friend_list, friend_count);
+    ShowList(FriendList, friend_cnt);
 }
 
 // ---------- Message operations ----------
 
 void send_message_flow(const char *user) {
-    char friends_path[MAX_LINE];
-    build_path(friends_path, sizeof(friends_path), FRIEND_DIR, user, ".txt");
-    char friend_list[256][MAX_NAME];
-    int friend_count = load_list(friends_path, friend_list, 256);
-    if (friend_count == 0) {
+    char FriendsPath[MaxLine];
+    BuildPath(FriendsPath, sizeof(FriendsPath), FRIEND_DIR, user, ".txt");
+    char FriendList[256][MaxName];
+    int friend_cnt = LoadList(FriendsPath, FriendList, 256);
+    if (friend_cnt == 0) {
         printf("No friends to send messages to.\n");
         return;
     }
     
-    char line[MAX_LINE];
-    prompt_line("Enter message (max 255 chars), press Enter to finish: ", line, sizeof(line));
+    char line[MaxLine];
+    PromptLine("Enter message (max 255 chars), press Enter to finish: ", line, sizeof(line));
     if (strlen(line) == 0) {
         printf("Message is empty, cancelled.\n");
         return;
     }
     
     printf("Your friends:\n");
-    show_list(friend_list, friend_count);
-    printf("%2d. All\n%2d. Back\n", friend_count + 1, friend_count + 2);
+    ShowList(FriendList, friend_cnt);
+    printf("%2d. All\n%2d. Back\n", friend_cnt + 1, friend_cnt + 2);
 
-    char selection[MAX_LINE];
-    prompt_line("Enter friend numbers (separated by space), press Enter to finish: ", selection, sizeof(selection));
+    char selection[MaxLine];
+    PromptLine("Enter friend numbers (separated by space), press Enter to finish: ", selection, sizeof(selection));
     int selected[256] = {0};
-    if (!parse_indexes(selection, friend_count + 2, selected)) {
+    if (!parse_indexes(selection, friend_cnt + 2, selected)) {
         printf("No valid selection.\n");
         return;
     }
-    if (selected[friend_count + 1]) return; // Back
-    if (selected[friend_count]) {
-        for (int i = 0; i < friend_count; i++) selected[i] = 1;
+    if (selected[friend_cnt + 1]) return; // Back
+    if (selected[friend_cnt]) {
+        for (int i = 0; i < friend_cnt; i++) selected[i] = 1;
     }
     
-    bool is_all = selected[friend_count];
-    int sent_count = 0;
-    for (int i = 0; i < friend_count; i++) {
+    bool is_all = selected[friend_cnt];
+    int sent_cnt = 0;
+    for (int i = 0; i < friend_cnt; i++) {
         if (selected[i]) {
-            if (append_message(friend_list[i], user, line)) {
+            if (AppendMsg(FriendList[i], user, line)) {
                 if (!is_all) {
-                    printf("Message sent to %s\n", friend_list[i]);
+                    printf("Message sent to %s\n", FriendList[i]);
                 }
-                sent_count++;
+                sent_cnt++;
             }
         }
     }
     
-    if (sent_count > 0 && is_all) {
+    if (sent_cnt > 0 && is_all) {
         printf("Message sent to All\n");
     }
 }
 
 void read_messages_flow(const char *user) {
-    Message *msgs = NULL;
-    int count = 0;
-    if (!load_messages(user, &msgs, &count)) {
+    Message *msg = NULL;
+    int cnt = 0;
+    if (!load_messages(user, &msg, &cnt)) {
         printf("Failed to read messages.\n");
         return;
     }
     
-    if (count == 0) {
+    if (cnt == 0) {
         printf("No messages found.\n");
-        free(msgs);
+        free(msg);
         return;
     }
     
@@ -767,35 +767,35 @@ void read_messages_flow(const char *user) {
     
     int choice;
     if (scanf("%d", &choice) != 1) {
-        clear_stdin();
+        ClearStdin();
         printf("Invalid choice! Please enter a number between 1 and 3.\n");
-        free(msgs);
+        free(msg);
         return;
     }
-    clear_stdin();
+    ClearStdin();
     
     if (choice == 3) {
-        free(msgs);
+        free(msg);
         return;
     }
     
     int unread_only = (choice == 2);
     int found = 0;
     
-    for (int i = 0; i < count; i++) {
-        if (unread_only && !str_equal(msgs[i].status, "UNREAD")) continue;
+    for (int i = 0; i < cnt; i++) {
+        if (unread_only && !strEqual(msg[i].status, "UNREAD")) continue;
         
         // Format timestamp for display
-        if (strlen(msgs[i].time_str) == 8) {
+        if (strlen(msg[i].strTime) == 8) {
             // Already HH:MM:SS
-            printf("[%s %s] From: %s\n", msgs[i].date, msgs[i].time_str, msgs[i].sender);
+            printf("[%s %s] From: %s\n", msg[i].date, msg[i].strTime, msg[i].sender);
         } else {
-            printf("[%s] From: %s\n", msgs[i].date, msgs[i].sender);
+            printf("[%s] From: %s\n", msg[i].date, msg[i].sender);
         }
-        printf("%s\n", msgs[i].content);
+        printf("%s\n", msg[i].content);
         
-        if (str_equal(msgs[i].status, "UNREAD")) {
-            strcpy(msgs[i].status, "READ");
+        if (strEqual(msg[i].status, "UNREAD")) {
+            strcpy(msg[i].status, "READ");
         }
         found = 1;
     }
@@ -808,56 +808,56 @@ void read_messages_flow(const char *user) {
         }
     }
     
-    save_messages(user, msgs, count);
-    free(msgs);
+    save_messages(user, msg, cnt);
+    free(msg);
 }
 
 void delete_messages_flow(const char *user) {
-    Message *msgs = NULL;
-    int count = 0;
-    if (!load_messages(user, &msgs, &count)) {
+    Message *msg = NULL;
+    int cnt = 0;
+    if (!load_messages(user, &msg, &cnt)) {
         printf("Failed to read messages.\n");
         return;
     }
     
-    if (count == 0) {
+    if (cnt == 0) {
         printf("No messages found.\n");
         return;
     }
     
-    char start_str[32], end_str[32], account[64];
-    prompt_line("Enter start date (dd/mm/yyyy): ", start_str, sizeof(start_str));
-    prompt_line("Enter end date (dd/mm/yyyy): ", end_str, sizeof(end_str));
-    prompt_line("Enter account name (or 'all'): ", account, sizeof(account));
+    char start_str[32], end_str[32], accnt[64];
+    PromptLine("Enter start date (dd/mm/yyyy): ", start_str, sizeof(start_str));
+    PromptLine("Enter end date (dd/mm/yyyy): ", end_str, sizeof(end_str));
+    PromptLine("Enter accnt name (or 'all'): ", accnt, sizeof(accnt));
 
     struct tm start_tm, end_tm;
     if (!parse_input_date(start_str, &start_tm) || !parse_input_date(end_str, &end_tm)) {
         printf("Invalid date format.\n");
-        free(msgs);
+        free(msg);
         return;
     }
     
-    int removed_count = 0;
-    int new_count = 0;
-    for (int i = 0; i < count; i++) {
+    int removed_cnt = 0;
+    int new_cnt = 0;
+    for (int i = 0; i < cnt; i++) {
         struct tm msg_tm;
-        if (!parse_iso_date(msgs[i].date, &msg_tm)) {
-            msgs[new_count++] = msgs[i]; // Keep if cannot parse
+        if (!parse_iso_date(msg[i].date, &msg_tm)) {
+            msg[new_cnt++] = msg[i]; // Keep if cannot parse
             continue;
         }
         int in_range = date_in_range(&msg_tm, &start_tm, &end_tm);
-        int match_account = str_equal(account, "all") || str_equal(msgs[i].sender, account);
-        if (in_range && match_account) {
-            removed_count++;
+        int match_accnt = strEqual(accnt, "all") || strEqual(msg[i].sender, accnt);
+        if (in_range && match_accnt) {
+            removed_cnt++;
             continue; // Delete
         }
-        msgs[new_count++] = msgs[i];
+        msg[new_cnt++] = msg[i];
     }
     
-    save_messages(user, msgs, new_count);
-    free(msgs);
+    save_messages(user, msg, new_cnt);
+    free(msg);
     printf("Removed %d message(s) from %s in period %s - %s.\n", 
-           removed_count, account, start_str, end_str);
+           removed_cnt, accnt, start_str, end_str);
 }
 
 // ---------- Menus ----------
@@ -874,11 +874,11 @@ void manage_friends_menu(const char *user) {
         printf("========================================================\n");
         printf("Choose an option (1-5): ");
         if (scanf("%d", &choice) != 1) {
-            clear_stdin();
+            ClearStdin();
             printf("Invalid choice! Please enter a number between 1 and 5.\n");
             continue;
         }
-        clear_stdin();
+        ClearStdin();
         switch (choice) {
             case 1: add_friends_flow(user); break;
             case 2: accept_friends_flow(user); break;
@@ -901,11 +901,11 @@ void manage_messages_menu(const char *user) {
         printf("=========================================================\n");
         printf("Choose an option (1-4): ");
         if (scanf("%d", &choice) != 1) {
-            clear_stdin();
+            ClearStdin();
             printf("Invalid choice! Please enter a number between 1 and 4.\n");
             continue;
         }
-        clear_stdin();
+        ClearStdin();
         switch (choice) {
             case 1: send_message_flow(user); break;
             case 2: read_messages_flow(user); break;
@@ -926,11 +926,11 @@ void main_service_menu(const char *user) {
         printf("======================================================\n");
         printf("Choose an option (1-3): ");
         if (scanf("%d", &choice) != 1) {
-            clear_stdin();
+            ClearStdin();
             printf("Invalid choice! Please enter a number between 1 and 3.\n");
             continue;
         }
-        clear_stdin();
+        ClearStdin();
         switch (choice) {
             case 1: manage_friends_menu(user); break;
             case 2: manage_messages_menu(user); break;
@@ -951,19 +951,19 @@ int main(void) {
     while (running) {
         printf("\n==================== Login ====================\n");
         printf("1. Login\n");
-        printf("2. Register (If you do not have an account)\n");
+        printf("2. Register (If you do not have an accnt)\n");
         printf("3. Exit\n");
         printf("===============================================\n");
         printf("Choose an option (1-3): ");
         int choice = 0;
         if (scanf("%d", &choice) != 1) {
-            clear_stdin();
+            ClearStdin();
             printf("Invalid choice! Please enter a number between 1 and 3.\n");
             continue;
         }
-        clear_stdin();
+        ClearStdin();
         if (choice == 1) {
-            char username[MAX_NAME];
+            char username[MaxName];
             if (login_flow(username)) {
                 main_service_menu(username);
             }
